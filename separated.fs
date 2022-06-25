@@ -2,9 +2,6 @@
 
 uniform sampler2D textureColor;
 
-uniform vec2 u_direction1 = vec2(1.0, 0.0);
-uniform vec2 u_direction2 = vec2(0.0, 1.0);
-
 uniform vec2 dir;
 
 out vec4 FragColor;
@@ -60,13 +57,6 @@ void main()
 		vec2 tc = TexCoord + dir * float(i - M);
 		sum += coeffs[i] * texture(textureColor, tc);
 	}
-
-    // vec4 sum2 = vec4(0.0);
-    // for (int i = 0; i < N; i++)
-    // {
-	// 	vec2 tc = TexCoord + u_direction2 * float(i - M);
-	// 	sum2 += coeffs[i] * texture(textureColor, tc);
-    // }
 
 	FragColor = sum;
 }

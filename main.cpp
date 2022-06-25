@@ -138,13 +138,6 @@ int main(int argc, char* argv[])
     // Shader ourShader = loadShaders("SimpleVertexShader.vertexshader", "naive.fragmentshader");
     Shader ourShader = loadShaders("SimpleVertexShader.vertexshader", "separated.fs");
     
-    // GLfloat v[6] = {0.0, 1.0, 2.0, 3.0, 4.0};
-    const GLfloat xDir[2] = {1.0f/512.0f, 0.0f};
-    const GLfloat yDir[2] = {0.0f, 1.0f/512.0f};
-
-    glUniform1fv(glGetUniformLocation(ourShader.getProgramID(), "u_direction1"), 2, xDir);
-    glUniform1fv(glGetUniformLocation(ourShader.getProgramID(), "u_direction2"), 2, yDir);
-    
     GLuint texture;
     loadTexture(argv[1], texture);
 
@@ -174,54 +167,7 @@ int main(int argc, char* argv[])
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    // create frame buffer object
-    GLuint FBO;
-    glGenFramebuffers(1, &FBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-
-    GLuint buffered_texture;
-    glBindTexture(GL_TEXTURE_2D, buffered_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 512, 512, 0, GL_RGB, GL_UNSIGNED_BYTE, 0); 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, buffered_texture, 0);
-
-    GLuint RBO;
-    glGenRenderbuffers(1, &RBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, RBO);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 512, 512);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	{
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-    } 
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);  
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, 512, 512, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, buffered_texture, 0);
     
-    // first pass
-    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
-    glEnable(GL_DEPTH_TEST);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-    // second pass
-    glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f); 
-    glClear(GL_COLOR_BUFFER_BIT);
-    
-    ourShader.use();  
-    glBindVertexArray(VAO);
-    glDisable(GL_DEPTH_TEST);
-    glBindTexture(GL_TEXTURE_2D, buffered_texture);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); 
-
     while(!glfwWindowShouldClose(win))
     {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
