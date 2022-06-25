@@ -2,11 +2,17 @@
 
 // Input vertex data, different for all executions of this shader.
 layout(location = 0) in vec3 vertexPosition_modelspace;
+layout(location = 1) in vec3 vertexColors;
 
-void main(){
+uniform vec4 ourColor;
+out vec4 aColor;
 
+void main()
+{
+    // gl_position is the output of vertex shader
+    // the value we put/calculated will be used in opengl
     gl_Position.xyz = vertexPosition_modelspace;
     gl_Position.w = 1.0;
-
+    aColor = ourColor;
 }
 
