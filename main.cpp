@@ -1,8 +1,7 @@
 #include <iostream>
-#include <chrono>
 #include <string>
-#include <cmath>
-// #include "jpeghelper.h"
+#include <stb_image.h>
+#include <shader.h>
 
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -12,18 +11,8 @@
 #include <glm/glm.hpp>
 using namespace glm;
 
-#include <shader.hpp>
 
 static GLFWwindow* win = NULL;
-
-// Shaders
-GLuint idProgramShader;
-GLuint idFragmentShader;
-GLuint idVertexShader;
-GLuint idJpegTexture;
-
-int widthWindow = 1024, heightWindow = 768;
-int *t_width, *t_height;
 
 void errorCallback(int error, const char* description)
 {
@@ -38,126 +27,164 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     }   
 }
 
-int main(int argc, char* argv[])
+// configuration about window settings
+void configure(int major, int minor, GLboolean forward_compat, GLenum profile)
 {
-    glfwSetErrorCallback(errorCallback);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, forward_compat);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, profile);
+}
 
+// does all the initializations necessary
+void initialize(int width, int height, const char *windowName)
+{
     if (!glfwInit())
     {
         std::cout<<"Failed to initialize GLFW\n"<<std::endl;
         exit(-1);
     }
-    
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    win = glfwCreateWindow(1024, 768, "Basic Triangle", NULL, NULL);
+    configure(3, 3, GL_TRUE, GLFW_OPENGL_CORE_PROFILE);
+    glfwSetErrorCallback(errorCallback);
+    
+    win = glfwCreateWindow(1024, 768, windowName, NULL, NULL);
     if (!win)
     {
-        std::cout<<"Failed to open GLFW window.\n"<<std::endl;
+        std::cerr << "Failed to open GLFW window.\n" << std::endl;
         glfwTerminate();
         exit(-1);
     }
 
     glfwMakeContextCurrent(win);
-
     glewExperimental= true;
+    
     GLenum err = glewInit();
     if (err != GLEW_OK)
     {
-        errorCallback(-1, "GLEW initialization failed");
+        std::cerr << "GLEW initialization failed.\n" << std::endl;
         exit(-1);
     }
 
     glfwSetInputMode(win, GLFW_STICKY_KEYS, GLFW_TRUE);
     glfwSetKeyCallback(win, keyCallback);
-    glClearColor(1.0, 0.4, 0.05, 1);
-    
-    GLuint VertexArrayID;
-    glGenVertexArrays(1, &VertexArrayID);
-    glBindVertexArray(VertexArrayID);
+}
 
-    Shader shader = Shader("SimpleVertexShader.vertexshader", "SimpleFragmentShader.fragmentshader");
-    GLuint programID = shader.ID;
 
-    static const GLfloat g_vertex_buffer_data[] = {
-        -1.0f, -1.0f, 0.0f, // bottom left
-         1.0f,  1.0f, 0.0f, // top right
-         1.0f, -1.0f, 0.0f, // bottom right
-        -1.0f,  1.0f, 0.0f  // top left
+Shader loadShaders(const char *vertexShaderName, const char *fragmentShaderName)
+{
+    Shader ourShader = Shader(vertexShaderName, fragmentShaderName);
+    return ourShader;
+}
+
+void loadTexture(const char *fileName, GLuint& texture)
+{
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Loading Texture
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load(fileName, &width, &height, &nrChannels, 0);
+
+    // generating textures
+    if (data)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cerr << "Failed to load texture image: " << stbi_failure_reason() << std::endl;
+    }
+    stbi_image_free(data);
+}
+
+int main(int argc, char* argv[])
+{
+    if (argc <= 1)
+    {
+        std::cerr << "Wrong usage. Correct usage as follows: ./blur <image_to_be_blurred>." << std::endl;
+        exit(-1);
+    }
+    else if (argc > 2)
+    {
+        std::cerr << "Wrong usage. You have provided extra input." << std::endl;
+        std::cerr << "Correct usage as follows: ./blur <image_to_be_blurred>." << std::endl;
+        exit(-1);
+    }
+
+    initialize(1024, 768, "Gaussian Blur");
+
+    // colored and texture vertices
+    static const GLfloat vertices[] = {
+        // positions            // colors         // texture coordinates
+        -1.0f,  1.0f, 1.0f,   0.1f, 0.0f, 0.0f,     0.0f, 1.0f,             // top left 
+         1.0f,  1.0f, 1.0f,   0.0f, 1.0f, 0.0f,     1.0f, 1.0f,             // top right
+         1.0f, -1.0f, 1.0f,   0.0f, 0.0f, 0.1f,     1.0f, 0.0f,             // bottom right
+        -1.0f, -1.0f, 1.0f,   1.0f, 0.0f, 0.0f,     0.0f, 0.0f              // bottom left
     };
 
     static const GLuint indices[] = {
-        0, 2, 1, // first triangle
-        0, 1, 3  // second triangle
+        0, 1, 2, // first triangle
+        0, 2, 3  // second triangle
     };
 
+    Shader ourShader = loadShaders("SimpleVertexShader.vertexshader", "SimpleFragmentShader.fragmentshader");
+    
+    GLuint texture;
+    loadTexture(argv[1], texture);
 
-    static const GLfloat colored_vertices[] = {
-         0.0,  0.5, 1.0, 0.7,  0.05, 0.05, // reddish
-        -0.5, -0.5, 1.0, 0.05, 0.7,  0.05, // greenish
-         0.5, -0.5, 1.0, 0.05, 0.05, 0.7  // blueish
-    };
+    GLuint VBO, VAO, EBO;
 
-    GLuint EBO, clr;
-    GLuint vertexbuffer;
-
-    glGenBuffers(1, &vertexbuffer);
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
-    glGenBuffers(1, &clr);
 
+    glBindVertexArray(VAO);
 
-    // glUniform1i(glGetUniformLocation(shader.ID, "greenColor"), (0.0, greenValue, 0.0));
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    // glBindBuffer(GL_ARRAY_BUFFER, clr);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-
-    glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(colored_vertices), colored_vertices, GL_STATIC_DRAW);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    // initTexture(idJpegTexture, argv[1], t_width, t_height);
+    // position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // color attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    // texture coordinate attribute
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     while(!glfwWindowShouldClose(win))
     {
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-        glUseProgram(programID);
+        // glUniform1i(loc, 0);
+        glBindTexture(GL_TEXTURE_2D, texture);
 
-        glVertexAttribPointer(
-            0,
-            3,
-            GL_FLOAT,
-            GL_FALSE,
-            3*sizeof(float),
-            (void*)0
-        );
-        glEnableVertexAttribArray(0);
-
-        float timeValue = glfwGetTime();
-        float greenValue = sin(timeValue) / 2.0f + 0.5f;
-        int vertexColorLocation = glGetUniformLocation(shader.ID, "ourColor");
-        glUniform4f(vertexColorLocation, greenValue, greenValue, greenValue, 1.0f);
-
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        ourShader.use();       
+        glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        // glBindVertexArray(0);
-        // glDisableVertexAttribArray(0);
 
         glfwSwapBuffers(win);
         glfwPollEvents();
     }
 
     // Cleanup VBO
-	glDeleteBuffers(1, &vertexbuffer);
-	glDeleteVertexArrays(1, &VertexArrayID);
-	glDeleteProgram(programID);
-    glfwDestroyWindow(win);
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
 
     glfwTerminate();
     return 0;
