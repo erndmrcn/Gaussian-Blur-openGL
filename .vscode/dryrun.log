@@ -1,6 +1,9 @@
-make --dry-run --keep-going --print-directory
+make --dry-run --always-make --keep-going --print-directory
 make: Entering directory '/home/erndmrcn/Desktop/GaussianBlur/Gaussian-Blur-openGL'
  
-make: Nothing to be done for 'all'.
+g++ -Wall -g -I./ -c stb_image.cpp 
+g++ -Wall -g -I./ -c shader.cpp 
+g++ -Wall -g -I./ -c main.cpp 
+g++ -o blur stb_image.o shader.o main.o -lGLEW -lGLU -lm -lGL -lm -lpthread -lrt -ldl -lglfw -ljpeg
 make: Leaving directory '/home/erndmrcn/Desktop/GaussianBlur/Gaussian-Blur-openGL'
  

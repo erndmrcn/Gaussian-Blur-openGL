@@ -6,8 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
- 
-# Make data base, printed on Sat Jun 25 20:24:50 2022
+# Make data base, printed on Sun Jun 26 04:29:31 2022
 
 # Variables
 
@@ -52,7 +51,7 @@ SNAP_DATA = /var/snap/code/99
 # environment
 VSCODE_NLS_CONFIG = {"locale":"en-us","availableLanguages":{},"_languagePackSupport":true}
 # environment
-JOURNAL_STREAM = 8:41703
+JOURNAL_STREAM = 8:316780
 # makefile (from 'Makefile', line 2)
 CFLAGS := -Wall -g
 # environment
@@ -70,7 +69,7 @@ GIO_LAUNCHED_DESKTOP_FILE = /var/lib/snapd/desktop/applications/code_code.deskto
 # environment
 USERNAME = erndmrcn
 # makefile (from 'Makefile', line 9)
-SOURCES := stb_image.cpp helper.cpp main.cpp
+SOURCES := stb_image.cpp shader.cpp main.cpp
 # environment
 MAKELEVEL := 0
 # environment
@@ -118,7 +117,7 @@ DISABLE_WAYLAND = 1
 # environment
 ELECTRON_RUN_AS_NODE = 1
 # environment
-INVOCATION_ID = 35800bccc11445b58144b76db3914f6a
+INVOCATION_ID = 57501458792e443e98fbc0dff19457f1
 # environment
 GDK_PIXBUF_MODULEDIR = /snap/code/99/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders
 # default
@@ -130,7 +129,7 @@ XDG_SESSION_DESKTOP = ubuntu
 # environment
 SSH_AUTH_SOCK = /run/user/1000/keyring/ssh
 # environment
-GIO_LAUNCHED_DESKTOP_FILE_PID = 3677
+GIO_LAUNCHED_DESKTOP_FILE_PID = 83359
 # automatic
 %F = $(notdir $%)
 # environment
@@ -200,7 +199,7 @@ CC := g++
 # environment
 GNOME_SHELL_SESSION_MODE = ubuntu
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-893ddd71-4b49-467d-ad3d-bd2c18784a40.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-2ce70d3d-950c-430e-b42f-c86f6c003ebe.sock
 # default
 MAKE_VERSION := 4.2.1
 # environment
@@ -284,13 +283,13 @@ GJS_DEBUG_OUTPUT = stderr
 # default
 .RECIPEPREFIX := 
 # makefile (from 'Makefile', line 10)
-OBJECTS :=  stb_image.o  helper.o  main.o
+OBJECTS :=  stb_image.o  shader.o  main.o
 # environment
 LC_ADDRESS = tr_TR.UTF-8
 # environment
 LANG = C
 # environment
-VSCODE_PID = 3776
+VSCODE_PID = 83413
 # variable set hash-table stats:
 # Load=140/1024=14%, Rehash=0, Collisions=23/173=13%
 
@@ -300,13 +299,14 @@ VSCODE_PID = 3776
 
 # Directories
 
-# . (device 66309, inode 1409800): 24 files, no impossibilities.
+# . (device 66309, inode 1409800): 28 files, no impossibilities.
 
-# 24 files, no impossibilities in 1 directories.
+# 28 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
 %.o: %.cpp
+ 
 #  recipe to execute (from 'Makefile', line 18):
 	$(CC) $(CFLAGS) -I$(INCLUDE_PATH) -c $< 
 	
@@ -314,6 +314,16 @@ VSCODE_PID = 3776
 # 1 implicit rules, 0 (0.0%) terminal.
 
 # Files
+
+shader.o: shader.cpp
+#  Implicit rule search has been done.
+#  Implicit/static pattern stem: 'shader'
+#  Last modified 2022-06-25 21:00:26.483393264
+#  File has been updated.
+#  Successfully updated.
+#  recipe to execute (from 'Makefile', line 18):
+	$(CC) $(CFLAGS) -I$(INCLUDE_PATH) -c $< 
+	
 
 all: blur
 #  Command line target.
@@ -329,20 +339,10 @@ Makefile:
 #  File has been updated.
 #  Successfully updated.
 
-helper.o: helper.cpp
-#  Implicit rule search has been done.
-#  Implicit/static pattern stem: 'helper'
-#  Last modified 2022-06-25 20:01:25.977445625
-#  File has been updated.
-#  Successfully updated.
-#  recipe to execute (from 'Makefile', line 18):
-	$(CC) $(CFLAGS) -I$(INCLUDE_PATH) -c $< 
-	
-
 # Not a target:
 main.cpp:
 #  Implicit rule search has been done.
-#  Last modified 2022-06-25 20:06:37.298500833
+#  Last modified 2022-06-26 03:32:02.38920917
 #  File has been updated.
 #  Successfully updated.
 
@@ -353,7 +353,6 @@ stb_image.o: stb_image.cpp
 #  File has been updated.
 #  Successfully updated.
 #  recipe to execute (from 'Makefile', line 18):
- 
 	$(CC) $(CFLAGS) -I$(INCLUDE_PATH) -c $< 
 	
 
@@ -362,6 +361,13 @@ stb_image.o: stb_image.cpp
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
+
+# Not a target:
+shader.cpp:
+#  Implicit rule search has been done.
+#  Last modified 2022-06-25 20:57:38.46674274
+#  File has been updated.
+#  Successfully updated.
 
 clean:
 #  Implicit rule search has not been done.
@@ -373,23 +379,16 @@ clean:
 main.o: main.cpp
 #  Implicit rule search has been done.
 #  Implicit/static pattern stem: 'main'
-#  Last modified 2022-06-25 20:22:48.066560654
+#  Last modified 2022-06-26 03:32:04.053244162
 #  File has been updated.
 #  Successfully updated.
 #  recipe to execute (from 'Makefile', line 18):
 	$(CC) $(CFLAGS) -I$(INCLUDE_PATH) -c $< 
 	
 
-# Not a target:
-helper.cpp:
-#  Implicit rule search has been done.
-#  Last modified 2022-06-25 20:01:24.093439235
-#  File has been updated.
-#  Successfully updated.
-
-blur: stb_image.o helper.o main.o
+blur: stb_image.o shader.o main.o
 #  Implicit rule search has not been done.
-#  Last modified 2022-06-25 20:22:48.126560885
+#  Last modified 2022-06-26 03:32:04.121245591
 #  File has been updated.
 #  Successfully updated.
 #  recipe to execute (from 'Makefile', line 15):
@@ -411,12 +410,12 @@ stb_image.cpp:
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 35 / storage = 369 B / avg = 10 B
-# current buf: size = 8162 B / used = 369 B / count = 35 / avg = 10 B
+# strcache buffers: 1 (0) / strings = 39 / storage = 440 B / avg = 11 B
+# current buf: size = 8162 B / used = 440 B / count = 39 / avg = 11 B
 
-# strcache performance: lookups = 54 / hit rate = 35%
+# strcache performance: lookups = 58 / hit rate = 32%
 # hash-table stats:
-# Load=35/8192=0%, Rehash=0, Collisions=1/54=2%
-# Finished Make data base on Sat Jun 25 20:24:50 2022
+# Load=39/8192=0%, Rehash=0, Collisions=1/58=2%
+# Finished Make data base on Sun Jun 26 04:29:31 2022
 
  
