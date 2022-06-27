@@ -11,8 +11,11 @@ There are 3 different implementation of gaussian blur.
         - In addition to two-pass property, uses hardware-implemented bilinear filtering. It decreases the number of pixel fetches.
 
 Usage:
-
-    ./blur <name_of_the_texture_image> <type_of_implementation>
+    First call the following 2 commands to compile.
+    * make clean
+    * make
+    Then, call the program.
+    * ./blur <name_of_the_texture_image> <type_of_implementation>
     * To run naive implementation type 1 for <type_of_implementation>.
     * To run two-pass implementation type 2 for <type_of_implementation>.
     * To run two-pass with bilinear filtering implementation type 3 for <type_of_implementation>.
