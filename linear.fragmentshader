@@ -1,7 +1,6 @@
 #version 330
 
 uniform sampler2D textureColor;
-
 uniform vec2 dir;
 
 out vec4 FragColor;
@@ -36,7 +35,7 @@ void main()
 {
 	vec4 sum = coeffs[0] * texture(textureColor, TexCoord);
 
-	for (int i = 1; i < M; i+=2)
+	for (int i = 1; i < M; i += 2)
 	{
         float w0 = coeffs[i];
         float w1 = coeffs[i + 1];
@@ -44,8 +43,8 @@ void main()
         float w = w0 + w1;
         float t = w1 / w;
 
-        sum += w * texture(textureColor, TexCoord + dir * (float(i) + t))
-        sum += w * texture(textureColor, TexCoord - dir * (float(i) + t))
+        sum += w * texture(textureColor, TexCoord + dir * (float(i) + t));
+        sum += w * texture(textureColor, TexCoord - dir * (float(i) + t));
 	}
 
 	FragColor = sum;

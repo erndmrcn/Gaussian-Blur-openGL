@@ -11,8 +11,10 @@
 #include <glm/glm.hpp>
 using namespace glm;
 
-
 static GLFWwindow* win = NULL;
+int window_width = 1024;
+int window_height = 768;
+int texture_width, texture_height;
 
 void errorCallback(int error, const char* description)
 {
@@ -27,21 +29,9 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     }
 }
 
-static float framesPerSecond = 0.0f;
-static int fps;
-static float lastTime = 0.0f;
-
-void CalculateFrameRate()
+void window_size_callback(GLFWwindow* window, int width, int height)
 {
-    float currentTime = glfwGetTime();
-    ++framesPerSecond;
-    if (currentTime - lastTime > 1.0f)
-    {
-        printf("Current Frames Per Second: %d\n\n", fps);
-        lastTime = currentTime;
-        fps = (int)framesPerSecond;
-        framesPerSecond = 0;
-    }
+    glfwSetWindowSize(window, width, height);
 }
 
 // configuration about window settings
@@ -73,6 +63,7 @@ void initialize(int width, int height, const char *windowName)
         exit(-1);
     }
 
+    glfwSetWindowSizeCallback(win, window_size_callback);
     glfwMakeContextCurrent(win);
     glewExperimental= true;
 
@@ -94,7 +85,8 @@ Shader loadShaders(const char *vertexShaderName, const char *fragmentShaderName)
     return ourShader;
 }
 
-void loadTexture(const char *fileName, GLuint& texture)
+// reads and loads texture
+void loadTexture(const char *fileName, GLuint& texture, int& width, int& height)
 {
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
@@ -107,9 +99,9 @@ void loadTexture(const char *fileName, GLuint& texture)
     stbi_set_flip_vertically_on_load(true);  
 
     // Loading Texture
-    int width, height, nrChannels;
+    int nrChannels;
     unsigned char *data = stbi_load(fileName, &width, &height, &nrChannels, 0);
-
+    
     // generating textures
     if (data)
     {
@@ -119,99 +111,115 @@ void loadTexture(const char *fileName, GLuint& texture)
     else
     {
         std::cerr << "Failed to load texture image: " << stbi_failure_reason() << std::endl;
+        exit(-1);
     }
     stbi_image_free(data);
 }
 
+// naive implementation O(n^2)
+// uses naive shader 
 void naive(Shader &shader, GLuint &texture, GLuint &VAO)
 {
+    glViewport( 0, 0, texture_width, texture_height);
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindTexture(GL_TEXTURE_2D, texture);
     shader.use();
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    glViewport( 0, 0, window_width, window_height);
 }
 
+// two pass gaussian filter - O(2n)
+// uses two-pass shader
 void separated(Shader &shader1, Shader &shader2, GLuint& FBO1, GLuint& FBO2, GLuint& intermediate_texture, GLuint& filtered_texture, GLuint& texture, GLuint& VAO, GLuint& dirLoc)
 {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
-    glViewport( 0, 0, 512, 512);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, FBO1); // unbind your FBO to set the default framebuffer
+    glViewport( 0, 0, texture_width, texture_height);
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO1); // bind Framebuffer1
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    shader1.use();
+    shader1.use(); // simple texture mapping shader
     glBindTexture(GL_TEXTURE_2D, texture); // color attachment texture
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, FBO2);
-    glBindTexture(GL_TEXTURE_2D, intermediate_texture); // color attachment texture
-    shader2.use();
-    glUniform2f(dirLoc, 0.0f, 1.0f/512.0f); // vertical
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO2); // bind Framebuffer2
+    glBindTexture(GL_TEXTURE_2D, intermediate_texture); // use the texture of the second one
+    shader2.use(); // two-pass gauss blur shader
+    glUniform2f(dirLoc, 0.0f, 1.0f/float(texture_height)); // vertical
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glBindTexture(GL_TEXTURE_2D, filtered_texture); // color attachment texture
-    shader2.use();
-    glUniform2f(dirLoc, 1.0f/512.0f, 0.0f); // horizontal
+    glBindTexture(GL_TEXTURE_2D, filtered_texture); // use the texture of the second one (vertically blurred)
+    shader2.use(); // two-pass gauss blur shader
+    glUniform2f(dirLoc, 1.0f/float(texture_width), 0.0f); // horizontal
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    glViewport( 0, 0, 512, 512);
+    glViewport( 0, 0, window_width, window_height);
 }
 
+// uses two-pass gaussian with bilinear filtering
 void separated_bilinear(Shader &shader1, Shader &shader2, GLuint& FBO1, GLuint& FBO2, GLuint& intermediate_texture, GLuint& filtered_texture, GLuint& texture, GLuint& VAO, GLuint& dirLoc)
 {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
-    glViewport( 0, 0, 512, 512);
+    glViewport( 0, 0, texture_width, texture_height);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, FBO1); // unbind your FBO to set the default framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO1); // bind Framebuffer0 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    shader1.use();
+    shader1.use(); // simple shader for texture mapping
     glBindTexture(GL_TEXTURE_2D, texture); // color attachment texture
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, FBO2);
-    glBindTexture(GL_TEXTURE_2D, intermediate_texture); // color attachment texture
-    shader2.use();
-    glUniform2f(dirLoc, 0.0f, 1.0f/512.0f); // vertical
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO2); // bind second Framebuffer
+    glBindTexture(GL_TEXTURE_2D, intermediate_texture); // use the texture of the first one
+    shader2.use(); // two-pass gauss shader with linear filtering
+    glUniform2f(dirLoc, 0.0f, 1.0f/float(texture_height)); // vertical
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glBindTexture(GL_TEXTURE_2D, filtered_texture); // color attachment texture
-    shader2.use();
-    glUniform2f(dirLoc, 1.0f/512.0f, 0.0f); // horizontal
+    glBindTexture(GL_TEXTURE_2D, filtered_texture); // use the texture of the second one (vertically blurred image)
+    shader2.use();  // two-pass gauss shader with linear filtering
+    glUniform2f(dirLoc, 1.0f/float(texture_width), 0.0f); // horizontal
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    glViewport( 0, 0, 512, 512);
+    glViewport( 0, 0, window_width, window_height);
 }
 
 int main(int argc, char* argv[])
 {
-    if (argc <= 1)
+    if (argc <= 3)
     {
         std::cerr << "Wrong usage. Correct usage as follows: ./blur <image_to_be_blurred> <implementation_type>." << std::endl;
-        std::cerr << "<implementation_type> options: naive, separated" << std::endl;
+        std::cerr << "For <implementation_type>, type 1 for naive implementation. 2 or 3 for faster result." << std::endl;
         exit(-1);
     }
     else if (argc > 3)
     {
         std::cerr << "Wrong usage. You have provided extra input." << std::endl;
-        std::cerr << "Correct usage as follows: ./blur <image_to_be_blurred>." << std::endl;
+        std::cerr << "Correct usage as follows: ./blur <image_to_be_blurred> <type_of_implementation>." << std::endl;
         exit(-1);
     }
 
-    initialize(512, 512, "Gaussian Blur");
+    int type = atoi(argv[2]);
+    if (type < 1 || type > 3)
+    {
+        std::cerr << "Invalid implementation type. Please choose between 1-3." << std::endl;
+        exit(-1);
+    }
+
+    initialize(window_width, window_height, "Gaussian Blur");
 
     // colored and texture vertices
     static const GLfloat vertices[] = {
@@ -232,12 +240,19 @@ int main(int argc, char* argv[])
     // naive implementation of gaussian filter
     Shader shader2 = loadShaders("SimpleVertexShader.vertexshader", "naive.fragmentshader");
     // separated implementation of gaussian filter
-    Shader shader3 = loadShaders("SimpleVertexShader.vertexshader", "separated.fs");
+    Shader shader3 = loadShaders("SimpleVertexShader.vertexshader", "separated.fragmentshader");
     // separated with bilinear filtering of gaussian filter
-    Shader shader4 = loadShaders("SimpleVertexShader.vertexshader", "linear.fs");
+    Shader shader4 = loadShaders("SimpleVertexShader.vertexshader", "linear.fragmentshader");
 
     GLuint texture;
-    loadTexture(argv[1], texture);
+    texture_width = 0;
+    texture_height = 0;
+
+    loadTexture(argv[1], texture, texture_width, texture_height);
+
+    window_height = texture_height;
+    window_width = texture_width;
+    glfwSetWindowSize(win, window_width, window_height);
 
     GLuint VBO, VAO, EBO;
 
@@ -274,22 +289,14 @@ int main(int argc, char* argv[])
     unsigned int intermediate_texture;
     glGenTextures(1, &intermediate_texture);
     glBindTexture(GL_TEXTURE_2D, intermediate_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 512, 512, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, intermediate_texture, 0);
-
-    // create renderbuffer object
-    // GLuint RBO;
-    // glGenRenderbuffers(1, &RBO);
-    // glBindRenderbuffer(GL_RENDERBUFFER, RBO);
-    // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 512, 512);
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, 512, 512, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
-    // glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
-    // glBindRenderbuffer(GL_RENDERBUFFER, RBO);
 
     unsigned int FBO2;
     glGenFramebuffers(1, &FBO2);
@@ -299,18 +306,14 @@ int main(int argc, char* argv[])
     glGenTextures(1, &filtered_texture);
     glBindTexture(GL_TEXTURE_2D, filtered_texture);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 512, 512, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, filtered_texture, 0);
-
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, 512, 512, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
-
-    // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, filtered_texture, 0);
 
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
     {
@@ -318,92 +321,24 @@ int main(int argc, char* argv[])
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    GLuint dirLoc = glGetUniformLocation(shader3.getProgramID(), "dir");
-
-    // glDrawBuffer(GL_COLOR_ATTACHMENT0);
+    GLuint dirLoc_sep = glGetUniformLocation(shader3.getProgramID(), "dir"); // two pass
+    GLuint dirLoc_sep_lin = glGetUniformLocation(shader4.getProgramID(), "dir"); // two pass with linear filtering
 
     while(!glfwWindowShouldClose(win))
     {
-        // separated(shader1, shader3, FBO1, FBO2, intermediate_texture, filtered_texture, texture, VAO, dirLoc);
-        separated_bilinear(shader1, shader4, FBO1, FBO2, intermediate_texture, filtered_texture, texture, VAO, dirLoc);
-        // naive(shader2, texture, VAO);
+        if (type == 1)
+        {
+            naive(shader2, texture, VAO);
+        }
+        else if (type == 2)
+        {
+            separated(shader1, shader3, FBO1, FBO2, intermediate_texture, filtered_texture, texture, VAO, dirLoc_sep);
+        }
+        else if (type == 3)
+        {
+            separated_bilinear(shader1, shader4, FBO1, FBO2, intermediate_texture, filtered_texture, texture, VAO, dirLoc_sep_lin);
+        }
         
-        /////// separated implementation ///////////////////
-            // glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-            // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            // // glViewport( 0, 0, 512, 512);
-            // // glBindFramebuffer(GL_FRAMEBUFFER, FBO1);
-            // // glEnable(GL_DEPTH_TEST);
-
-            // // glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-            // // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            // // shader1.use();
-            // // glBindTexture(GL_TEXTURE_2D, texture);
-            // // glBindVertexArray(VAO);
-            // // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-            // // glBindFramebuffer(GL_FRAMEBUFFER, 0); // unbind your FBO to set the default framebuffer
-            // // glDisable(GL_DEPTH_TEST);
-
-            // // glDisable(GL_CULL_FACE);
-            // // glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-            // // glClear(GL_COLOR_BUFFER_BIT);
-
-            // // shader3.use();
-            // // glUniform2f(dirLoc, 1.0f/512.0f, 0.0f); // horizontal
-            // // glBindTexture(GL_TEXTURE_2D, intermediate_texture);
-            // // glBindVertexArray(VAO);
-            // // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-            // // glUniform2f(dirLoc, 0.0f, 1.0f/512.0f); // vertical
-            // // glViewport( 0, 0, 512, 512);
-
-            // // glDisable(GL_DEPTH_TEST);
-
-            // // glBindFramebuffer(GL_FRAMEBUFFER, FBO1);
-            // // glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-            // // glClear(GL_COLOR_BUFFER_BIT);
-
-            // // glBindFramebuffer(GL_FRAMEBUFFER, FBO1); // unbind your FBO to set the default framebuffer
-            // // glDrawBuffer(GL_COLOR_ATTACHMENT0);
-            // // glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-            // // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-            // // shader3.use(); // shader program for rendering the quad
-            // // glUniform2f(dirLoc, 1.0f/512.0f, 0.0f); // horizontal
-            // // glBindTexture(GL_TEXTURE_2D, texture); // color attachment texture
-            // // glBindVertexArray(VAO);
-            // // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        
-            // glViewport( 0, 0, 512, 512);
-
-            // glBindFramebuffer(GL_FRAMEBUFFER, FBO1); // unbind your FBO to set the default framebuffer
-            // glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-            // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-            // shader1.use();
-            // glBindTexture(GL_TEXTURE_2D, texture); // color attachment texture
-            // glBindVertexArray(VAO);
-            // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-            // glBindFramebuffer(GL_FRAMEBUFFER, FBO2);
-            // glBindTexture(GL_TEXTURE_2D, intermediate_texture); // color attachment texture
-            // shader3.use();
-            // glUniform2f(dirLoc, 0.0f, 1.0f/512.0f); // vertical
-            // glBindVertexArray(VAO);
-            // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-            // glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            // glBindTexture(GL_TEXTURE_2D, filtered_texture); // color attachment texture
-            // shader3.use();
-            // glUniform2f(dirLoc, 1.0f/512.0f, 0.0f); // horizontal
-            // glBindVertexArray(VAO);
-            // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-            // glViewport( 0, 0, 512, 512);
-
         glfwSwapBuffers(win);
         glfwPollEvents();
     }
@@ -412,6 +347,13 @@ int main(int argc, char* argv[])
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
+    // Cleanup FBOs
+    glDeleteBuffers(1, &FBO1);
+    glDeleteBuffers(1, &FBO2);
+    // Cleanup textures
+    glDeleteTextures(1, &texture);
+    glDeleteTextures(1, &intermediate_texture);
+    glDeleteTextures(1, &filtered_texture);
 
     glfwTerminate();
     return 0;

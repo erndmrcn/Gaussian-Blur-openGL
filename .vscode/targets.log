@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Sun Jun 26 04:29:31 2022
+# Make data base, printed on Mon Jun 27 13:58:10 2022
 
 # Variables
 
@@ -51,7 +51,7 @@ SNAP_DATA = /var/snap/code/99
 # environment
 VSCODE_NLS_CONFIG = {"locale":"en-us","availableLanguages":{},"_languagePackSupport":true}
 # environment
-JOURNAL_STREAM = 8:316780
+JOURNAL_STREAM = 8:46665
 # makefile (from 'Makefile', line 2)
 CFLAGS := -Wall -g
 # environment
@@ -83,7 +83,7 @@ VSCODE_VERBOSE_LOGGING = true
 # environment
 _ = /snap/code/99/usr/share/code/code
 # environment
-MANAGERPID = 1175
+MANAGERPID = 1217
 # environment
 LESSOPEN = | /usr/bin/lesspipe %s
 # environment
@@ -99,7 +99,7 @@ PATH = /home/erndmrcn/.local/bin:/home/erndmrcn/anaconda3/bin:/home/erndmrcn/.lo
 # environment
 GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
-SESSION_MANAGER = local/EREN-NOTEBOOK:@/tmp/.ICE-unix/1433,unix/EREN-NOTEBOOK:/tmp/.ICE-unix/1433
+SESSION_MANAGER = local/EREN-NOTEBOOK:@/tmp/.ICE-unix/1466,unix/EREN-NOTEBOOK:/tmp/.ICE-unix/1466
 # environment
 XDG_RUNTIME_DIR = /run/user/1000
 # environment
@@ -117,7 +117,7 @@ DISABLE_WAYLAND = 1
 # environment
 ELECTRON_RUN_AS_NODE = 1
 # environment
-INVOCATION_ID = 57501458792e443e98fbc0dff19457f1
+INVOCATION_ID = 0f2f36ed4ac74742969ac927e002d480
 # environment
 GDK_PIXBUF_MODULEDIR = /snap/code/99/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders
 # default
@@ -129,7 +129,7 @@ XDG_SESSION_DESKTOP = ubuntu
 # environment
 SSH_AUTH_SOCK = /run/user/1000/keyring/ssh
 # environment
-GIO_LAUNCHED_DESKTOP_FILE_PID = 83359
+GIO_LAUNCHED_DESKTOP_FILE_PID = 3642
 # automatic
 %F = $(notdir $%)
 # environment
@@ -143,7 +143,7 @@ PWD = /home/erndmrcn/Desktop/GaussianBlur/Gaussian-Blur-openGL
 # default
 .LOADED := 
 # environment
-SSH_AGENT_PID = 1395
+SSH_AGENT_PID = 1428
 # environment
 ORIGINAL_XDG_CURRENT_DESKTOP = ubuntu:GNOME
 # environment
@@ -199,7 +199,7 @@ CC := g++
 # environment
 GNOME_SHELL_SESSION_MODE = ubuntu
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-2ce70d3d-950c-430e-b42f-c86f6c003ebe.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-44358d48-eb63-4a7b-bd81-2fb5cbce6abc.sock
 # default
 MAKE_VERSION := 4.2.1
 # environment
@@ -289,9 +289,10 @@ LC_ADDRESS = tr_TR.UTF-8
 # environment
 LANG = C
 # environment
-VSCODE_PID = 83413
+VSCODE_PID = 3709
 # variable set hash-table stats:
-# Load=140/1024=14%, Rehash=0, Collisions=23/173=13%
+ 
+# Load=140/1024=14%, Rehash=0, Collisions=23/179=13%
 
 # Pattern-specific Variable Values
 
@@ -299,14 +300,13 @@ VSCODE_PID = 83413
 
 # Directories
 
-# . (device 66309, inode 1409800): 28 files, no impossibilities.
+# . (device 66309, inode 1409800): 29 files, no impossibilities.
 
-# 28 files, no impossibilities in 1 directories.
+# 29 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
 %.o: %.cpp
- 
 #  recipe to execute (from 'Makefile', line 18):
 	$(CC) $(CFLAGS) -I$(INCLUDE_PATH) -c $< 
 	
@@ -330,7 +330,9 @@ all: blur
 #  Implicit rule search has been done.
 #  File does not exist.
 #  File has been updated.
-#  Successfully updated.
+#  Needs to be updated (-q is set).
+# variable set hash-table stats:
+# Load=0/32=0%, Rehash=0, Collisions=0/6=0%
 
 # Not a target:
 Makefile:
@@ -342,7 +344,7 @@ Makefile:
 # Not a target:
 main.cpp:
 #  Implicit rule search has been done.
-#  Last modified 2022-06-26 03:32:02.38920917
+#  Last modified 2022-06-26 18:31:09.096615489
 #  File has been updated.
 #  Successfully updated.
 
@@ -379,18 +381,38 @@ clean:
 main.o: main.cpp
 #  Implicit rule search has been done.
 #  Implicit/static pattern stem: 'main'
-#  Last modified 2022-06-26 03:32:04.053244162
+#  Last modified 2022-06-26 18:04:05.882109717
 #  File has been updated.
-#  Successfully updated.
+#  Needs to be updated (-q is set).
+# automatic
+# @ := main.o
+# automatic
+# % := 
+# automatic
+# * := main
+# automatic
+# + := main.cpp
+# automatic
+# | := 
+# automatic
+# < := main.cpp
+# automatic
+# ^ := main.cpp
+# automatic
+# ? := main.cpp
+# variable set hash-table stats:
+# Load=8/32=25%, Rehash=0, Collisions=1/15=7%
 #  recipe to execute (from 'Makefile', line 18):
 	$(CC) $(CFLAGS) -I$(INCLUDE_PATH) -c $< 
 	
 
 blur: stb_image.o shader.o main.o
 #  Implicit rule search has not been done.
-#  Last modified 2022-06-26 03:32:04.121245591
+#  Last modified 2022-06-26 18:04:05.946109953
 #  File has been updated.
-#  Successfully updated.
+#  Needs to be updated (-q is set).
+# variable set hash-table stats:
+# Load=0/32=0%, Rehash=0, Collisions=0/6=0%
 #  recipe to execute (from 'Makefile', line 15):
 	$(CC) -o $@ $^ $(LIBS)
 	
@@ -410,12 +432,12 @@ stb_image.cpp:
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 39 / storage = 440 B / avg = 11 B
-# current buf: size = 8162 B / used = 440 B / count = 39 / avg = 11 B
+# strcache buffers: 1 (0) / strings = 40 / storage = 450 B / avg = 11 B
+# current buf: size = 8162 B / used = 450 B / count = 40 / avg = 11 B
 
-# strcache performance: lookups = 58 / hit rate = 32%
+# strcache performance: lookups = 59 / hit rate = 32%
 # hash-table stats:
-# Load=39/8192=0%, Rehash=0, Collisions=1/58=2%
-# Finished Make data base on Sun Jun 26 04:29:31 2022
+# Load=40/8192=0%, Rehash=0, Collisions=1/59=2%
+# Finished Make data base on Mon Jun 27 13:58:10 2022
 
  
