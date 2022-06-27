@@ -78,7 +78,6 @@ void initialize(int width, int height, const char *windowName)
     glfwSetKeyCallback(win, keyCallback);
 }
 
-
 Shader loadShaders(const char *vertexShaderName, const char *fragmentShaderName)
 {
     Shader ourShader = Shader(vertexShaderName, fragmentShaderName);
@@ -86,16 +85,16 @@ Shader loadShaders(const char *vertexShaderName, const char *fragmentShaderName)
 }
 
 // reads and loads texture
-void loadTexture(const char *fileName, GLuint& texture, int& width, int& height)
+void loadTexture(const char *fileName, GLuint& texture, int& width, int& height, const int type )
 {
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    
     stbi_set_flip_vertically_on_load(true);  
 
     // Loading Texture
@@ -199,7 +198,7 @@ void separated_bilinear(Shader &shader1, Shader &shader2, GLuint& FBO1, GLuint& 
 
 int main(int argc, char* argv[])
 {
-    if (argc <= 3)
+    if (argc <= 2)
     {
         std::cerr << "Wrong usage. Correct usage as follows: ./blur <image_to_be_blurred> <implementation_type>." << std::endl;
         std::cerr << "For <implementation_type>, type 1 for naive implementation. 2 or 3 for faster result." << std::endl;
@@ -248,7 +247,7 @@ int main(int argc, char* argv[])
     texture_width = 0;
     texture_height = 0;
 
-    loadTexture(argv[1], texture, texture_width, texture_height);
+    loadTexture(argv[1], texture, texture_width, texture_height, type);
 
     window_height = texture_height;
     window_width = texture_width;
@@ -293,8 +292,8 @@ int main(int argc, char* argv[])
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, intermediate_texture, 0);
 
@@ -310,8 +309,8 @@ int main(int argc, char* argv[])
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, filtered_texture, 0);
 
@@ -324,8 +323,22 @@ int main(int argc, char* argv[])
     GLuint dirLoc_sep = glGetUniformLocation(shader3.getProgramID(), "dir"); // two pass
     GLuint dirLoc_sep_lin = glGetUniformLocation(shader4.getProgramID(), "dir"); // two pass with linear filtering
 
+    // double lastTime = glfwGetTime();
+    // int nbFrames = 0;
+ 
     while(!glfwWindowShouldClose(win))
     {
+        // measure time
+        // double currentTime = glfwGetTime();
+        // nbFrames += 1;
+        // // 1 sec passed
+        // if (currentTime - lastTime >= 1)
+        // {
+        //     printf("%f ms/frame\n", 1000/(double(nbFrames)));
+        //     nbFrames = 0;
+        //     lastTime += 1.0;
+        // }
+
         if (type == 1)
         {
             naive(shader2, texture, VAO);
